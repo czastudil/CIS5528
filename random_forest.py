@@ -2,6 +2,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
+import csv
 
 
 def obtain_reduced_dataset(all_features, features_to_be_used):
@@ -32,44 +33,34 @@ def obtain_reduced_dataset(all_features, features_to_be_used):
     reduced_features = all_features.filter(feature_names_to_be_used)
     return reduced_features
 
-def get_average_performance(iterations, features, labels):
-    accuracy_sum = 0
-    sensitivity_sum = 0
-    specificity_sum = 0
-    for _ in range(iterations):
-        # split into train test
-        x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
-        #x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=0.2)
-
-        # create and train model
-        n_est = 200
-        m_depth = 6
-        forest = RandomForestClassifier(n_estimators=n_est, max_depth=m_depth, bootstrap=True, min_samples_split=2, min_samples_leaf=1)
-        forest.fit(x_train, y_train)
-        
-        # get predictions
-        y_pred = forest.predict(x_test)
-
-        # get confusion matrix
-        tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
-
-        # calculate accuracy, specificity, & sensitivity
-        accuracy_sum += forest.score(x_test, y_test)
-        specificity_sum += tn / (tn + fp)
-        sensitivity_sum += tp / (tp + fn)
-
-    reduced_features_to_be_used = ['17', '19', '21', '22', '23']
-    print("Iterations:", iterations)
-    print("max_depth:", m_depth)
-    print("n_estimators:", n_est)
-    if reduced_features_input:
-        print("Results on Feature set (" + ','.join(reduced_features_to_be_used) + "): ")
-    else:
-        print("Results on Entire Feature set: ")
-    print("     Random Forest accuracy: ", accuracy_sum/iterations)
-    print("     Random Forest specificity: ", specificity_sum/iterations)
-    print("     Random Forest sensitivity: ", sensitivity_sum/iterations)
+def get_average_performance(iterations, features, labels, writer):
+    est_list = [100, 150, 200, 250, 300]
+    depth_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     
+    for x in depth_list:
+        for y in est_list:
+            # split into train test
+            x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=0.2)
+            accuracy_sum = 0
+            sensitivity_sum = 0
+            specificity_sum = 0
+            for _ in range(iterations):
+                # create and train model
+                forest = RandomForestClassifier(n_estimators=y, max_depth=x, bootstrap=False, min_samples_split=2, min_samples_leaf=1)
+                forest.fit(x_train, y_train)
+                
+                # get predictions
+                y_pred = forest.predict(x_test)
+
+                # get confusion matrix
+                tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+
+                # calculate accuracy, specificity, & sensitivity
+                accuracy_sum += forest.score(x_test, y_test)
+                specificity_sum += tn / (tn + fp)
+                sensitivity_sum += tp / (tp + fn)
+            
+            writer.writerow([x, y, accuracy_sum/iterations, specificity_sum/iterations, sensitivity_sum/iterations])
 
 if __name__ == '__main__':
     # read in the dataset
@@ -87,32 +78,15 @@ if __name__ == '__main__':
     reduced_features_to_be_used = ['17', '19', '21', '22', '23']
     if reduced_features_input:
         features = obtain_reduced_dataset(features, reduced_features_to_be_used)
-
-    get_average_performance(10, features, labels)
-    """# split into train test
-    x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
-    #x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=0.2)
-
-    # create and train model
-    forest = RandomForestClassifier(n_estimators=100, max_depth=4, bootstrap=True, min_samples_split=2, min_samples_leaf=1)
-    forest.fit(x_train, y_train)
-    
-    # get predictions
-    y_pred = forest.predict(x_test)
-
-    # get confusion matrix
-    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
-
-    # calculate accuracy, specificity, & sensitivity
-    accuracy = forest.score(x_test, y_test)
-    specificity = tn / (tn + fp)
-    sensitivity = tp / (tp + fn)
-
-    # report results
-    if reduced_features_input:
-        print("Results on Feature set (" + ','.join(reduced_features_to_be_used) + "): ")
+            # create csv to save training progression data
+        f = open('reduced_feature_training.csv', 'w')
+        writer = csv.writer(f)
+        writer.writerow(['max_depth','n_estimators','accuracy','specificity','sensitivity'])
+        get_average_performance(10, features, labels, writer)
+        f.close()
     else:
-        print("Results on Entire Feature set: ")
-    print("     Random Forest accuracy: ", forest.score(x_test, y_test))
-    print("     Random Forest specificity: ", specificity)
-    print("     Random Forest sensitivity: ", sensitivity)"""
+        f = open('full_feature_training.csv', 'w')
+        writer = csv.writer(f)
+        writer.writerow(['max_depth','n_estimators','accuracy','specificity','sensitivity'])
+        get_average_performance(10, features, labels, writer)
+        f.close()
