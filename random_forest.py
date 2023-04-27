@@ -7,6 +7,7 @@ from sklearn.model_selection import cross_val_score
 import csv
 from tree_vis import *
 import random
+import matplotlib.pyplot as plt
 
 feature_names = ['air_time',
                  'disp_index',
@@ -103,6 +104,13 @@ if __name__ == '__main__':
         writer = csv.writer(f)
         writer.writerow(['max_depth','n_estimators','accuracy','specificity','sensitivity'])
         model = get_average_performance(features, labels, writer)
+        importances =  model.feature_importances_
+        sorted_indices = model.feature_importances_.argsort()
+        plt.title('Feature Importance')
+        feat_names = [features.columns[i] for i in sorted_indices]
+        plt.bar(feat_names, model.feature_importances_[sorted_indices])
+        plt.xticks(rotation=90)
+        plt.show()
         f.close()
     else:
         # create csv to save training progression data
@@ -113,6 +121,6 @@ if __name__ == '__main__':
         model = get_average_performance(features, labels, writer)
         f.close()
 
-    sample_tree_num = random.randint(0, model.get_params()['n_estimators'])
-    vis_tree(model.estimators_[sample_tree_num], construct_feature_names(reduced_features_input, reduced_features_to_be_used),
-             ['P', 'H'], 'tree_sampled')
+    #sample_tree_num = random.randint(0, model.get_params()['n_estimators'])
+    #vis_tree(model.estimators_[sample_tree_num], construct_feature_names(reduced_features_input, reduced_features_to_be_used),
+    #         ['P', 'H'], 'tree_sampled')
