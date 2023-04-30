@@ -8,6 +8,7 @@ import csv
 # from tree_vis import *
 import random
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 def get_average_performance(features, labels, writer):
@@ -74,17 +75,27 @@ if __name__ == '__main__':
     model = get_average_performance(features, labels, writer)
     f.close()
 
-    results_file = pd.read_csv('feature_training.csv')
-    accuracy_list = results_file['accuracy']
+    importances = model.feature_importances_
+    sorted_indices = model.feature_importances_.argsort()
+    plt.title('Feature Importance')
+    print('INDICES:', sorted_indices)
+    print('FEATURES:', features.columns)
+    feat_names = [features.columns[i] for i in sorted_indices]
+    plt.bar(feat_names, model.feature_importances_[sorted_indices])
+    plt.xticks(rotation=90)
+    plt.show()
 
-    accuracy_sum = 0
-    for accuracy in accuracy_list:
-        accuracy_sum += accuracy
-    average_accuracy = accuracy_sum / len(accuracy_list)
+    # results_file = pd.read_csv('feature_training.csv')
+    # accuracy_list = results_file['accuracy']
 
-    print("Accuracy: " + str(average_accuracy))
+    # accuracy_sum = 0
+    # for accuracy in accuracy_list:
+    #     accuracy_sum += accuracy
+    # average_accuracy = accuracy_sum / len(accuracy_list)
 
-    sample_tree_num = random.randint(0, model.get_params()['n_estimators'])
+    # print("Accuracy: " + str(average_accuracy))
+
+    # sample_tree_num = random.randint(0, model.get_params()['n_estimators'])
     # vis_tree(model.estimators_[sample_tree_num],
     #          construct_feature_names(reduced_features_input, reduced_features_to_be_used),
     #          ['P', 'H'], 'tree_sampled')
